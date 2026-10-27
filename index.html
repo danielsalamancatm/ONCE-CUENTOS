@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprensión Lectora - 2° Primaria</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { brand: { pink:'#FF70A6', orange:'#FF9770', yellow:'#FFD670', green:'#70D6FF', purple:'#A663CC' } },
+    fontFamily: { fredoka:['Fredoka','sans-serif'], quicksand:['Quicksand','sans-serif'] }
+  }}
+}
+</script>
+<style>
+  body { font-family:'Quicksand',sans-serif; background:linear-gradient(135deg,#FFF5F5 0%,#E8F4F8 50%,#F0E6FF 100%); min-height:100vh; }
+  h1,h2,h3,.font-title { font-family:'Fredoka',sans-serif; }
+  .bounce-hover { transition:all .3s cubic-bezier(.34,1.56,.64,1); }
+  .bounce-hover:hover { transform:scale(1.04) translateY(-4px); }
+  .hl-word { border-radius:6px; padding:0 3px; cursor:pointer; transition:background .2s; }
+  .hl-word:hover { background:#FEF08A; }
+  ::-webkit-scrollbar { width:10px; }
+  ::-webkit-scrollbar-track { background:#f1f1f1; border-radius:10px; }
+  ::-webkit-scrollbar-thumb { background:#FF70A6; border-radius:10px; }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .pulse-badge { animation: pulseB 1.2s infinite; }
+  @keyframes pulseB { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  .fire { animation: fireFlicker .6s infinite alternate; }
+  @keyframes fireFlicker { from{filter:brightness(1)} to{filter:brightness(1.4)} }
+  .fade-in { animation: fadeIn .5s ease; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+</style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+<!-- ==================== PANTALLA DE BIENVENIDA ==================== -->
+<div id="view-welcome" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gradient-to-br from-pink-100 via-yellow-50 to-sky-100">
+  <div class="bg-white rounded-3xl p-6 sm:p-10 max-w-md w-full text-center shadow-2xl border-4 border-pink-300 fade-in">
+    <div class="w-24 h-24 bg-gradient-to-r from-pink-500 to-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+      <i class="fa-solid fa-book-open-reader text-white text-5xl"></i>
+    </div>
+    <h1 class="text-3xl font-bold text-pink-600 mb-2">¡Aventura LECTORA!</h1>
+    <p class="text-slate-600 mb-6 text-base">11 cuentos para leer y aprender 📚✨</p>
+
+    <label class="block text-left text-sm font-bold text-slate-700 mb-2">
+      <i class="fa-solid fa-user text-pink-500 mr-1"></i> ¿Cómo te llamas?
+    </label>
+    <input id="student-name-input" type="text" maxlength="30" placeholder="Escribe tu nombre aquí..."
+      class="w-full px-4 py-3 rounded-2xl border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-base font-semibold text-slate-800 mb-4"
+      onkeydown="if(event.key==='Enter') startAdventure()">
+
+    <button onclick="startAdventure()" class="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold py-3 rounded-2xl shadow-lg transition transform hover:scale-105 text-lg flex items-center justify-center space-x-2">
+      <span>¡Comenzar!</span>
+      <i class="fa-solid fa-rocket"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ==================== HEADER ==================== -->
+<header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50 px-4 py-3 border-b-4 border-yellow-300">
+  <div class="max-w-6xl mx-auto flex justify-between items-center flex-wrap gap-2">
+    <div class="flex items-center space-x-3 cursor-pointer" onclick="showStoryList()">
+      <div class="bg-gradient-to-r from-pink-500 to-yellow-400 p-3 rounded-2xl shadow-md text-white text-2xl">
+        <i class="fa-solid fa-book-open-reader animate-bounce"></i>
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-2xl font-bold text-pink-600 leading-none">Aventura LECTORA</h1>
+        <span id="greeting-name" class="text-xs sm:text-sm font-semibold text-slate-500">¡Hola!</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="hidden sm:flex items-center bg-emerald-100 border-2 border-emerald-400 px-3 py-1.5 rounded-full shadow-inner space-x-1">
+        <i class="fa-solid fa-check-double text-emerald-600"></i>
+        <span id="completed-count" class="font-title text-sm text-emerald-800 font-bold">0/11</span>
+      </div>
+      <div id="streak-box" class="hidden items-center bg-orange-100 border-2 border-orange-400 px-3 py-1.5 rounded-full shadow-inner space-x-1">
+        <i class="fa-solid fa-fire text-orange-500 text-xl fire"></i>
+        <span id="streak-display" class="font-title text-lg text-orange-700 font-bold">0</span>
+      </div>
+      <div class="flex items-center bg-yellow-100 border-2 border-yellow-400 px-4 py-1.5 rounded-full shadow-inner space-x-2">
+        <i class="fa-solid fa-star text-yellow-500 text-2xl"></i>
+        <span id="score-display" class="font-title text-xl text-yellow-800 font-bold transition-transform">0</span>
+        <span class="text-xs font-bold text-yellow-700 uppercase hidden sm:inline">PTS</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+  <!-- ==================== VIEW: LISTA DE CUENTOS ==================== -->
+  <section id="view-stories" class="hidden">
+    <div class="text-center mb-6">
+      <h2 id="welcome-title" class="text-2xl sm:text-4xl font-bold text-slate-800 mb-2">¡Elige un cuento! 📖</h2>
+      <p class="text-slate-600 text-sm sm:text-lg">Lee con atención. Si te equivocas, volverás a leer el cuento. ¡Tú puedes! 💪</p>
+    </div>
+    <div id="stories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+  </section>
+
+  <!-- ==================== VIEW: LECTURA ==================== -->
+  <section id="view-reading" class="hidden">
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-white rounded-3xl p-5 sm:p-8 shadow-xl border-4 border-pink-200 fade-in">
+        <div class="flex justify-between items-center mb-3">
+          <span id="reading-story-num" class="bg-pink-100 text-pink-700 text-xs font-bold px-3 py-1 rounded-full border border-pink-200">Cuento #1</span>
+          <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">⭐⭐ Medio</span>
+        </div>
+        <div class="text-center my-4">
+          <span id="reading-story-icon" class="text-6xl block mb-2">🧸</span>
+          <h2 id="reading-story-title" class="text-2xl sm:text-3xl font-bold text-pink-600"></h2>
+        </div>
+        <div class="bg-amber-50/70 p-5 rounded-2xl border-2 border-dashed border-amber-200 my-4">
+          <p class="text-xs font-bold text-amber-700 mb-2"><i class="fa-solid fa-book-open mr-1"></i> Lee el cuento con atención:</p>
+          <div id="reading-story-text" class="text-lg sm:text-xl leading-relaxed text-slate-700 font-medium"></div>
+        </div>
+        <div class="text-center">
+          <button onclick="startQuestions()" class="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-2xl shadow-lg transition transform hover:scale-105 text-lg flex items-center justify-center space-x-2 mx-auto">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>¡Ya leí! Ir a las preguntas</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW: PREGUNTAS ==================== -->
+  <section id="view-questions" class="hidden">
+    <div class="max-w-3xl mx-auto">
+      <div class="flex justify-between items-center mb-3">
+        <button onclick="showStoryList()" class="bg-white border-2 border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl shadow hover:bg-slate-50 transition flex items-center space-x-2 text-sm">
+          <i class="fa-solid fa-arrow-left text-pink-500"></i><span>Salir</span>
+        </button>
+        <span id="q-story-title" class="text-sm font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl"></span>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border-4 border-sky-200 fade-in">
+        <div class="mb-4">
+          <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+            <span id="question-progress-text">Pregunta 1 de 5</span>
+            <span id="question-progress-percent">20%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+            <div id="question-progress-bar" class="bg-gradient-to-r from-sky-400 to-indigo-500 h-full w-1/5 transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <div class="flex items-start space-x-3 bg-sky-50 p-4 rounded-2xl border border-sky-100 mb-5">
+          <i class="fa-solid fa-circle-question text-sky-500 text-xl mt-0.5"></i>
+          <h3 id="question-text" class="text-base sm:text-lg font-bold text-slate-800"></h3>
+        </div>
+
+        <!-- Opción múltiple -->
+        <div id="options-container" class="space-y-3"></div>
+
+        <!-- Verdadero / Falso -->
+        <div id="pencil-container" class="hidden space-y-4">
+          <div class="p-4 bg-slate-50 border-2 border-slate-300 rounded-2xl">
+            <p class="text-center text-base sm:text-lg font-bold text-slate-800 mb-4">
+              "<span id="pencil-statement-text"></span>"
+            </p>
+            <div class="flex gap-3">
+              <button onclick="checkPencilAnswer(true)" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl shadow transition text-base flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-check text-xl"></i><span>Verdadero</span>
+              </button>
+              <button onclick="checkPencilAnswer(false)" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl shadow transition text-base flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-xmark text-xl"></i><span>Falso</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Completar oración -->
+        <div id="fill-container" class="hidden space-y-4">
+          <div class="p-4 bg-sky-50 border-2 border-sky-300 rounded-2xl text-base sm:text-lg font-bold text-slate-800 text-center">
+            <span id="fill-sentence"></span>
+          </div>
+          <div id="fill-options" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Feedback -->
+        <div id="feedback-message" class="hidden mt-5 p-4 rounded-2xl text-center font-bold text-base"></div>
+
+        <!-- Botón siguiente -->
+        <div class="mt-5 flex justify-end">
+          <button id="btn-next-question" onclick="nextQuestion()" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition transform hover:scale-105 flex items-center space-x-2 text-base">
+            <span>Siguiente</span><i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MODAL FINAL DE CUENTO ==================== -->
+  <div id="view-congrats" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border-4 border-yellow-300 relative">
+      <div class="w-20 h-20 bg-yellow-100 border-4 border-yellow-400 rounded-full flex items-center justify-center mx-auto -mt-16 shadow-lg">
+        <i class="fa-solid fa-trophy text-yellow-500 text-4xl animate-bounce"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-800 mt-4 mb-2">¡Cuento completado! 🎉</h2>
+      <div id="stars-earned" class="text-4xl mb-3"></div>
+      <p id="congrats-msg" class="text-slate-600 text-sm mb-5"></p>
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5 flex justify-around">
+        <div><span class="block text-xs font-bold text-slate-400 uppercase">Aciertos</span>
+          <span id="congrats-correct" class="text-2xl font-bold text-emerald-500">0/0</span></div>
+        <div class="h-8 w-px bg-slate-300"></div>
+        <div><span class="block text-xs font-bold text-slate-400 uppercase">Puntos</span>
+          <span id="congrats-points" class="text-2xl font-bold text-yellow-500">+0</span></div>
+      </div>
+      <div class="space-y-3">
+        <button onclick="nextStoryFromCongrats()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow transition flex items-center justify-center space-x-2">
+          <span>Siguiente cuento</span><i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button onclick="showStoryList()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-2xl transition">Volver a la lista</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL FINAL: TODOS COMPLETADOS ==================== -->
+  <div id="view-all-done" class="hidden fixed inset-0 bg-black/70 backdrop-blur-md z-[55] flex items-center justify-center p-4">
+    <div class="bg-gradient-to-br from-pink-50 to-yellow-50 rounded-3xl p-6 sm:p-10 max-w-lg w-full text-center shadow-2xl border-4 border-yellow-400 relative fade-in">
+      <div class="w-24 h-24 bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full flex items-center justify-center mx-auto -mt-16 shadow-xl">
+        <i class="fa-solid fa-crown text-white text-5xl animate-bounce"></i>
+      </div>
+      <h2 class="text-3xl font-bold text-pink-600 mt-4 mb-3">¡INCREÍBLE! 🎊</h2>
+      <p id="all-done-name" class="text-xl font-bold text-slate-800 mb-2"></p>
+      <p class="text-slate-700 text-base leading-relaxed mb-4 px-2">
+        ¡Has completado los <strong>11 cuentos</strong>! 
+      </p>
+      <div class="bg-white/80 rounded-2xl p-4 mb-5 border-2 border-pink-200">
+        <p class="text-lg font-bold text-pink-700 leading-relaxed">
+          🌟 ¡Eres una persona que <span class="text-emerald-600">SÍ SABE LEER</span> y que siempre está dispuesta a aprender! 🌟
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="bg-yellow-100 rounded-2xl p-3 border-2 border-yellow-400">
+          <span class="block text-xs font-bold text-yellow-700 uppercase">Puntos</span>
+          <span id="final-score" class="text-2xl font-bold text-yellow-600">0</span>
+        </div>
+        <div class="bg-emerald-100 rounded-2xl p-3 border-2 border-emerald-400">
+          <span class="block text-xs font-bold text-emerald-700 uppercase">Cuentos</span>
+          <span class="text-2xl font-bold text-emerald-600">11/11</span>
+        </div>
+      </div>
+      <button onclick="restartAll()" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 rounded-2xl shadow transition flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-rotate-right"></i><span>Jugar de nuevo</span>
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ==================== AUDIO ==================== -->
+<script>
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function initAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
+function playSound(type){
+  initAudio(); if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  if(type==='correct'){
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(523.25,now);
+    osc.frequency.setValueAtTime(659.25,now+.1);
+    osc.frequency.setValueAtTime(783.99,now+.2);
+    osc.frequency.setValueAtTime(1046.50,now+.3);
+    gain.gain.setValueAtTime(.3,now);
+    gain.gain.exponentialRampToValueAtTime(.01,now+.5);
+    osc.start(now); osc.stop(now+.5);
+  } else if(type==='wrong'){
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(220,now);
+    osc.frequency.setValueAtTime(180,now+.15);
+    gain.gain.setValueAtTime(.3,now);
+    gain.gain.exponentialRampToValueAtTime(.01,now+.4);
+    osc.start(now); osc.stop(now+.4);
+  } else if(type==='click'){
+    osc.type='sine';
+    osc.frequency.setValueAtTime(400,now);
+    osc.frequency.exponentialRampToValueAtTime(800,now+.05);
+    gain.gain.setValueAtTime(.15,now);
+    gain.gain.exponentialRampToValueAtTime(.01,now+.05);
+    osc.start(now); osc.stop(now+.05);
+  }
+}
+</script>
+
+<!-- ==================== DATOS ==================== -->
+<script>
+const STORIES_DATA = [
+{
+ id:1, title:'Mi oso Lolo', icon:'🧸',
+ bgGradient:'from-amber-100 to-amber-200', borderColor:'border-amber-300',
+ text:'Éste es mi oso. Mi oso se llama Lolo. Lolo es muy amoroso. Él es de color beige. A Lolo le gusta jugar conmigo todos los días en el jardín.',
+ questions:[
+  {type:'mc', q:'¿Quién es Lolo?', options:['Un gorila','Un oso','Un ratón'], correct:1, explain:'El texto dice: "Mi oso se llama Lolo".'},
+  {type:'mc', q:'¿De qué color es Lolo?', options:['Negro','Rosa','Beige'], correct:2, explain:'El texto dice: "Él es de color beige".'},
+  {type:'pencil', statement:'Lolo es un oso amoroso.', isTrue:true, explain:'El texto dice: "Lolo es muy amoroso".'},
+  {type:'fill', sentence:'A Lolo le gusta ___ conmigo.', options:['jugar','comer','dormir'], correct:0, explain:'El texto dice: "A Lolo le gusta jugar conmigo".'},
+  {type:'mc', q:'¿Dónde juega Lolo conmigo?', options:['En la casa','En el jardín','En la escuela'], correct:1, explain:'El texto menciona que juega en el jardín.'}
+ ]
+},
+{
+ id:2, title:'Mi tortuga Lucila', icon:'🐢',
+ bgGradient:'from-emerald-100 to-green-200', borderColor:'border-emerald-300',
+ text:'Ésta es mi tortuga. Mi tortuga se llama Lucila. Lucila es muy perezosa. Ella es de color verde con café. A Lucila le gusta comer lechuga fresca cada mañana.',
+ questions:[
+  {type:'mc', q:'¿Quién es Lucila?', options:['Un pez','Un tiburón','Una tortuga'], correct:2, explain:'El texto dice: "Mi tortuga se llama Lucila".'},
+  {type:'pencil', statement:'Lucila es muy juguetona.', isTrue:false, explain:'El texto dice que Lucila es "muy perezosa".'},
+  {type:'mc', q:'¿De qué color es Lucila?', options:['Verde y café','Verde y negro','Verde y amarillo'], correct:0, explain:'El texto dice: "de color verde con café".'},
+  {type:'fill', sentence:'A Lucila le gusta comer ___.', options:['galletas','lechuga','peces'], correct:1, explain:'El texto dice: "le gusta comer lechuga fresca".'},
+  {type:'mc', q:'¿Cuándo come Lucila?', options:['Cada mañana','Cada noche','Cada semana'], correct:0, explain:'El texto dice "cada mañana".'}
+ ]
+},
+{
+ id:3, title:'Mi pez Andrés', icon:'🐟',
+ bgGradient:'from-sky-100 to-blue-200', borderColor:'border-sky-300',
+ text:'Éste es mi pez. Mi pez se llama Andrés. Andrés es muy veloz. Él es de color rojo. A Andrés le gusta comer algas del estanque y nadar entre las piedras.',
+ questions:[
+  {type:'mc', q:'¿Quién es Andrés?', options:['Un pez','Un pulpo','Un tiburón'], correct:0, explain:'El texto dice: "Mi pez se llama Andrés".'},
+  {type:'mc', q:'¿De qué color es Andrés?', options:['Amarillo','Azul','Rojo'], correct:2, explain:'El texto dice: "Él es de color rojo".'},
+  {type:'pencil', statement:'Andrés nada muy despacio.', isTrue:false, explain:'El texto dice que Andrés es "muy veloz".'},
+  {type:'fill', sentence:'A Andrés le gusta comer ___.', options:['algas','pastel','peces'], correct:0, explain:'El texto dice: "le gusta comer algas".'},
+  {type:'mc', q:'¿Dónde nada Andrés?', options:['En el mar','Entre las piedras','En la arena'], correct:1, explain:'El texto dice: "nadar entre las piedras".'}
+ ]
+},
+{
+ id:4, title:'Mi gato Ambrosio', icon:'🐱',
+ bgGradient:'from-purple-100 to-indigo-200', borderColor:'border-indigo-300',
+ text:'Éste es mi gato. Mi gato tiene el nombre de Ambrosio. Ambrosio es muy travieso. Él es de color negro. A Ambrosio le gusta jugar con estambre y saltar por los muebles.',
+ questions:[
+  {type:'mc', q:'¿Quién es Ambrosio?', options:['Un perro','Un gato','Un conejo'], correct:1, explain:'El texto dice: "Éste es mi gato".'},
+  {type:'pencil', statement:'Ambrosio es de color blanco.', isTrue:false, explain:'El texto dice: "Él es de color negro".'},
+  {type:'mc', q:'¿Cómo es Ambrosio?', options:['Ruidoso','Travieso','Tramposo'], correct:1, explain:'El texto dice: "Ambrosio es muy travieso".'},
+  {type:'fill', sentence:'A Ambrosio le gusta jugar con ___.', options:['estambre','agua','arena'], correct:0, explain:'El texto dice: "le gusta jugar con estambre".'},
+  {type:'mc', q:'¿Qué más le gusta hacer a Ambrosio?', options:['Dormir','Saltar por los muebles','Cantar'], correct:1, explain:'El texto dice: "saltar por los muebles".'}
+ ]
+},
+{
+ id:5, title:'La mula de Memo', icon:'🫏',
+ bgGradient:'from-orange-100 to-amber-200', borderColor:'border-orange-300',
+ text:'La mula de Memo lame la miel. La miel de mamá. Mimí ama la miel y Memo ama el milo. Memo y la mula salen a la loma mientras la mula lame la miel.',
+ questions:[
+  {type:'mc', q:'La mula es de...', options:['Mimí','Memo','Mamá'], correct:1, explain:'El texto dice: "La mula de Memo".'},
+  {type:'mc', q:'Mimí ama la...', options:['Miel','Masa','Mula'], correct:0, explain:'El texto dice: "Mimí ama la miel".'},
+  {type:'pencil', statement:'La mula lame la miel.', isTrue:true, explain:'El texto dice: "La mula de Memo lame la miel".'},
+  {type:'fill', sentence:'Memo y la mula salen a la ___.', options:['casa','loma','tienda'], correct:1, explain:'El texto dice: "salen a la loma".'},
+  {type:'mc', q:'¿Qué ama Memo?', options:['La miel','El milo','La loma'], correct:1, explain:'El texto dice: "Memo ama el milo".'}
+ ]
+},
+{
+ id:6, title:'La muela mala', icon:'🦷',
+ bgGradient:'from-teal-100 to-cyan-200', borderColor:'border-teal-300',
+ text:'A mi mamá le duele la muela. La muela de mamá está mala. Mi mamá muele el milo, la lima y la miel. La muela mala ama la miel, el milo y la lima.',
+ questions:[
+  {type:'mc', q:'A mi mamá le duele la...', options:['Mano','Muela','Miel'], correct:1, explain:'El texto dice: "le duele la muela".'},
+  {type:'fill', sentence:'Mi mamá muele el milo, la lima y la ___.', options:['miel','masa','muela'], correct:0, explain:'El texto dice: "muele el milo, la lima y la miel".'},
+  {type:'pencil', statement:'A mi mamá no le duele la muela.', isTrue:false, explain:'El texto dice lo contrario: sí le duele.'},
+  {type:'mc', q:'¿Qué ama la muela mala?', options:['La loma','La miel','La mesa'], correct:1, explain:'El texto dice: "La muela mala ama la miel".'},
+  {type:'mc', q:'¿Cómo está la muela de mamá?', options:['Buena','Mala','Nueva'], correct:1, explain:'El texto dice: "La muela de mamá está mala".'}
+ ]
+},
+{
+ id:7, title:'Pepa, la paloma', icon:'🕊️',
+ bgGradient:'from-rose-100 to-pink-200', borderColor:'border-pink-300',
+ text:'La paloma Pepa ama a su palomo Pepe. Pepa y Pepe son pololos. El palomo Pepe ama a su paloma. La paloma y su palomo salen de paseo a la loma. El palomo le da un pomelo a la paloma y la paloma le da una papa al palomo. Pepe pela la papa y Pepa pela el pomelo.',
+ questions:[
+  {type:'mc', q:'La paloma se llama...', options:['Pepa','Pupi','Pepe'], correct:0, explain:'El texto dice: "La paloma Pepa".'},
+  {type:'mc', q:'La paloma y el palomo salen de paseo a la...', options:['Tienda','Loma','Mercado'], correct:1, explain:'El texto dice: "salen de paseo a la loma".'},
+  {type:'pencil', statement:'Pepe pela el pomelo.', isTrue:false, explain:'El texto dice: "Pepe pela la papa y Pepa pela el pomelo".'},
+  {type:'fill', sentence:'Pepa pela el ___.', options:['papa','pomelo','pelo'], correct:1, explain:'El texto dice: "Pepa pela el pomelo".'},
+  {type:'mc', q:'¿Qué le da el palomo a la paloma?', options:['Una papa','Un pomelo','Una pera'], correct:1, explain:'El texto dice: "El palomo le da un pomelo a la paloma".'}
+ ]
+},
+{
+ id:8, title:'Pepe es mi Papá', icon:'👨‍👧',
+ bgGradient:'from-blue-100 to-indigo-200', borderColor:'border-blue-300',
+ text:'Mi papá es Pepe. Mi papá sale con su pala y mi mamá pela las papas para la sopa. El pelo de mi papá es liso, mi papá usa la pipa, el papel y la lupa.',
+ questions:[
+  {type:'mc', q:'Mi papá sale con su...', options:['Pipa','Pico','Pala'], correct:2, explain:'El texto dice: "sale con su pala".'},
+  {type:'mc', q:'Mi mamá pela las...', options:['Peras','Papas','Pilas'], correct:1, explain:'El texto dice: "pela las papas para la sopa".'},
+  {type:'pencil', statement:'El pelo de mi papá es liso.', isTrue:true, explain:'El texto dice: "El pelo de mi papá es liso".'},
+  {type:'fill', sentence:'Mi papá usa la pipa, el papel y la ___.', options:['lupa','luna','lata'], correct:0, explain:'El texto dice: "usa la pipa, el papel y la lupa".'},
+  {type:'mc', q:'¿Para qué pela mamá las papas?', options:['Para la sopa','Para el pastel','Para el pan'], correct:0, explain:'El texto dice: "para la sopa".'}
+ ]
+},
+{
+ id:9, title:'El sapo Sipo', icon:'🐸',
+ bgGradient:'from-lime-100 to-green-200', borderColor:'border-lime-400',
+ text:'El sapo Sipo es muy estudioso. Suma las sumas sentado en un piso. El sapo usa su piso y posa su peso en la losa. El sapo Sipo y la sapa Sipa sentados en la losa suman y suman. ¡Qué estudioso es el sapo Sipo! ¡Qué estudiosa es la sapa Sipa!',
+ questions:[
+  {type:'mc', q:'El sapo Sipo es muy...', options:['Sumiso','Estudioso','Pesado'], correct:1, explain:'El texto dice: "El sapo Sipo es muy estudioso".'},
+  {type:'fill', sentence:'El sapo usa su ___.', options:['mesa','piso','pesa'], correct:1, explain:'El texto dice: "El sapo usa su piso".'},
+  {type:'pencil', statement:'Al sapo Sipo no le gusta sumar.', isTrue:false, explain:'El texto dice que "suma y suma", le encanta sumar.'},
+  {type:'mc', q:'¿Dónde se sientan Sipo y Sipa?', options:['En la losa','En la mesa','En la silla'], correct:0, explain:'El texto dice: "sentados en la losa".'},
+  {type:'mc', q:'¿Cómo se llama la sapa?', options:['Sipo','Sipa','Sopa'], correct:1, explain:'El texto dice: "la sapa Sipa".'}
+ ]
+},
+{
+ id:10, title:'La sopa de la osa Susana', icon:'🐻',
+ bgGradient:'from-fuchsia-100 to-pink-200', borderColor:'border-fuchsia-300',
+ text:'La osa Susana pone la sopa en la mesa, para los osos. Mamá osa ama a su familia de osos. Los osos aman la sopa de la mamá osa. Susana es una osa muy amorosa.',
+ questions:[
+  {type:'mc', q:'La osa Susana pone la...', options:['Cosa','Sopa','Mesa'], correct:1, explain:'El texto dice: "pone la sopa en la mesa".'},
+  {type:'mc', q:'Mamá osa ama a su...', options:['Papá','Mamá','Familia'], correct:2, explain:'El texto dice: "ama a su familia de osos".'},
+  {type:'pencil', statement:'Mamá osa no ama a su familia.', isTrue:false, explain:'El texto dice lo contrario: sí los ama.'},
+  {type:'fill', sentence:'Los osos aman la ___ de mamá osa.', options:['sopa','mesa','casa'], correct:0, explain:'El texto dice: "aman la sopa de la mamá osa".'},
+  {type:'mc', q:'¿Cómo es Susana?', options:['Amorosa','Mala','Triste'], correct:0, explain:'El texto dice: "Susana es una osa muy amorosa".'}
+ ]
+},
+{
+ id:11, title:'El tomate Tomás', icon:'🍅',
+ bgGradient:'from-red-100 to-rose-200', borderColor:'border-red-300',
+ text:'El tomate Tomás toma té y toma mate. Toma mate a las dos y toma té a las seis. Toma mate de tomate, toma té. Toma té. Toma mate tomatito. Tomatito toma té.',
+ questions:[
+  {type:'mc', q:'El tomate toma...', options:['Té','Leche','Coca'], correct:0, explain:'El texto dice: "El tomate Tomás toma té".'},
+  {type:'mc', q:'Toma mate a las...', options:['Dos','Cinco','Seis'], correct:0, explain:'El texto dice: "Toma mate a las dos".'},
+  {type:'pencil', statement:'Tomás toma té a las diez.', isTrue:false, explain:'El texto dice: "toma té a las seis".'},
+  {type:'fill', sentence:'Toma té a las ___.', options:['dos','seis','ocho'], correct:1, explain:'El texto dice: "toma té a las seis".'},
+  {type:'mc', q:'¿Cómo se llama el tomate?', options:['Tomás','Tomatito','Té'], correct:0, explain:'El texto dice: "El tomate Tomás".'}
+ ]
+}
+];
+
+/* ==================== ESTADO GLOBAL ==================== */
+let studentName = '';
+let currentStoryIndex = 0;
+let currentQuestionIndex = 0;
+let totalScore = 0;
+let streak = 0;
+let answeredCurrent = false;
+let correctCount = 0;
+let completedStories = new Set();  // IDs de cuentos completados
+let shuffledQuestions = [];         // preguntas mezcladas del cuento actual
+let currentShuffleOptions = [];     // opciones mezcladas de la pregunta actual
+
+/* ==================== INICIO ==================== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('student-name-input').focus();
+});
+
+function startAdventure(){
+  const input = document.getElementById('student-name-input');
+  const name = input.value.trim();
+  if(!name){
+    input.classList.add('border-red-500','shake');
+    setTimeout(()=>input.classList.remove('shake'),500);
+    input.focus();
+    return;
+  }
+  studentName = name;
+  playSound('click');
+  document.getElementById('greeting-name').innerText = `¡Hola, ${studentName}! 👋`;
+  document.getElementById('welcome-title').innerText = `¡${studentName}, elige un cuento! 📖`;
+  document.getElementById('view-welcome').classList.add('hidden');
+  document.getElementById('view-stories').classList.remove('hidden');
+  renderStoryCards();
+}
+
+/* ==================== LISTA DE CUENTOS ==================== */
+function renderStoryCards(){
+  const grid = document.getElementById('stories-grid');
+  grid.innerHTML='';
+  updateCompletedCount();
+
+  STORIES_DATA.forEach((s,idx)=>{
+    const done = completedStories.has(s.id);
+    const card = document.createElement('div');
+    card.className = `bounce-hover bg-gradient-to-br ${s.bgGradient} rounded-3xl p-5 border-4 ${s.borderColor} shadow-md hover:shadow-xl flex flex-col justify-between cursor-pointer relative`;
+    card.onclick = ()=>openReading(idx);
+
+    const checkBadge = done
+      ? `<span class="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1"><i class="fa-solid fa-check"></i> Completado</span>`
+      : `<span class="absolute -top-2 -right-2 bg-slate-300 text-slate-600 text-xs font-bold px-3 py-1 rounded-full shadow border-2 border-white">Pendiente</span>`;
+
+    card.innerHTML = `
+      ${checkBadge}
+      <div>
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-4xl">${s.icon}</span>
+          <span class="bg-white/80 text-purple-700 text-xs font-bold px-2.5 py-1 rounded-full border border-purple-200">⭐⭐</span>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">${idx+1}. ${s.title}</h3>
+        <p class="text-slate-600 text-xs line-clamp-2 mb-3 font-medium">${s.text}</p>
+      </div>
+      <div class="mt-2 flex items-center justify-between bg-white/90 p-2.5 rounded-2xl border border-white">
+        <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-list-check text-pink-500 mr-1"></i> ${s.questions.length} preg.</span>
+        <span class="${done?'bg-emerald-500':'bg-pink-500'} text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow">
+          ${done?'Repasar':'¡Leer!'}
+        </span>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function updateCompletedCount(){
+  document.getElementById('completed-count').innerText = `${completedStories.size}/${STORIES_DATA.length}`;
+}
+
+function showStoryList(){
+  playSound('click');
+  document.getElementById('view-stories').classList.remove('hidden');
+  document.getElementById('view-reading').classList.add('hidden');
+  document.getElementById('view-questions').classList.add('hidden');
+  document.getElementById('view-congrats').classList.add('hidden');
+  document.getElementById('view-all-done').classList.add('hidden');
+  renderStoryCards();
+}
+
+/* ==================== LECTURA DEL CUENTO ==================== */
+function openReading(idx){
+  playSound('click');
+  currentStoryIndex = idx;
+  const story = STORIES_DATA[idx];
+
+  document.getElementById('reading-story-num').innerText = `Cuento #${story.id}`;
+  document.getElementById('reading-story-icon').innerText = story.icon;
+  document.getElementById('reading-story-title').innerText = story.title;
+  document.getElementById('reading-story-text').innerText = story.text;
+
+  document.getElementById('view-stories').classList.add('hidden');
+  document.getElementById('view-reading').classList.remove('hidden');
+  document.getElementById('view-questions').classList.add('hidden');
+  document.getElementById('view-congrats').classList.add('hidden');
+}
+
+function startQuestions(){
+  playSound('click');
+  currentQuestionIndex = 0;
+  correctCount = 0;
+
+  // Preparar preguntas (mantener orden pero mezclar opciones al mostrar)
+  shuffledQuestions = STORIES_DATA[currentStoryIndex].questions.map(q => ({...q}));
+
+  document.getElementById('view-reading').classList.add('hidden');
+  document.getElementById('view-questions').classList.remove('hidden');
+  document.getElementById('q-story-title').innerText = `📖 ${STORIES_DATA[currentStoryIndex].title}`;
+  renderQuestion();
+}
+
+/* ==================== PREGUNTAS ==================== */
+function shuffleArray(arr){
+  const a = [...arr];
+  for(let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function renderQuestion(){
+  const qData = shuffledQuestions[currentQuestionIndex];
+  answeredCurrent = false;
+
+  const total = shuffledQuestions.length;
+  const pct = Math.round(((currentQuestionIndex+1)/total)*100);
+  document.getElementById('question-progress-text').innerText = `Pregunta ${currentQuestionIndex+1} de ${total}`;
+  document.getElementById('question-progress-percent').innerText = `${pct}%`;
+  document.getElementById('question-progress-bar').style.width = `${pct}%`;
+
+  const fb = document.getElementById('feedback-message');
+  fb.className = 'hidden mt-5 p-4 rounded-2xl text-center font-bold text-base';
+  fb.innerHTML = '';
+  document.getElementById('btn-next-question').classList.add('hidden');
+
+  const optsC = document.getElementById('options-container');
+  const pencilC = document.getElementById('pencil-container');
+  const fillC = document.getElementById('fill-container');
+  optsC.classList.add('hidden');
+  pencilC.classList.add('hidden');
+  fillC.classList.add('hidden');
+
+  if(qData.type==='mc'){
+    optsC.classList.remove('hidden');
+    document.getElementById('question-text').innerText = qData.q;
+
+    // Mezclar opciones manteniendo la correcta
+    const indexed = qData.options.map((text,i)=>({text, isCorrect: i===qData.correct}));
+    const mixed = shuffleArray(indexed);
+    currentShuffleOptions = mixed;
+
+    optsC.innerHTML='';
+    mixed.forEach((opt,idx)=>{
+      const btn = document.createElement('button');
+      btn.className = 'w-full text-left bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 hover:border-sky-300 font-bold text-slate-700 p-3.5 rounded-2xl transition flex items-center space-x-3 text-base';
+      btn.onclick = ()=>checkMCAnswer(idx, btn);
+      btn.innerHTML = `<span class="w-8 h-8 rounded-xl bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm flex-shrink-0">${String.fromCharCode(65+idx)}</span><span class="flex-1">${opt.text}</span>`;
+      optsC.appendChild(btn);
+    });
+  } else if(qData.type==='pencil'){
+    pencilC.classList.remove('hidden');
+    document.getElementById('question-text').innerText = '¿Verdadero o Falso?';
+    document.getElementById('pencil-statement-text').innerText = qData.statement;
+  } else if(qData.type==='fill'){
+    fillC.classList.remove('hidden');
+    document.getElementById('question-text').innerText = 'Completa la oración';
+    document.getElementById('fill-sentence').innerHTML = qData.sentence.replace('___','<span class="inline-block min-w-[80px] border-b-4 border-sky-400 text-sky-600">?</span>');
+
+    const indexed = qData.options.map((text,i)=>({text, isCorrect: i===qData.correct}));
+    const mixed = shuffleArray(indexed);
+    currentShuffleOptions = mixed;
+
+    const fOpts = document.getElementById('fill-options');
+    fOpts.innerHTML='';
+    mixed.forEach((opt,idx)=>{
+      const b = document.createElement('button');
+      b.className = 'bg-sky-50 hover:bg-sky-100 border-2 border-sky-300 text-sky-800 font-bold p-3 rounded-xl transition text-base';
+      b.innerText = opt.text;
+      b.onclick = ()=>checkFillAnswer(idx, b);
+      fOpts.appendChild(b);
+    });
+  }
+}
+
+/* ==================== RESPUESTAS ==================== */
+function showCorrectFeedback(explain){
+  const fb = document.getElementById('feedback-message');
+  fb.className = 'block mt-5 p-4 rounded-2xl text-center font-bold text-base bg-emerald-100 text-emerald-800 border-2 border-emerald-300 animate-bounce';
+  fb.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> ¡Excelente, ${studentName}! 🎉
+    <p class="text-sm font-semibold mt-2 text-emerald-700"><i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i>${explain}</p>`;
+  document.getElementById('btn-next-question').classList.remove('hidden');
+}
+
+function showWrongAndReturn(){
+  const fb = document.getElementById('feedback-message');
+  fb.className = 'block mt-5 p-4 rounded-2xl text-center font-bold text-base bg-rose-100 text-rose-800 border-2 border-rose-300';
+  fb.innerHTML = `<i class="fa-solid fa-circle-xmark mr-2"></i> ¡Casi, ${studentName}! Vamos a leer el cuento otra vez 📖
+    <p class="text-xs font-semibold mt-2">Regresando al cuento...</p>`;
+
+  // Reiniciar progreso del cuento (porque vuelve a empezar)
+  setTimeout(()=>{
+    currentQuestionIndex = 0;
+    correctCount = 0;
+    openReading(currentStoryIndex);
+  }, 1500);
+}
+
+function handleStreak(correct){
+  if(correct){
+    streak++;
+    const box = document.getElementById('streak-box');
+    box.classList.remove('hidden');
+    box.classList.add('flex');
+    document.getElementById('streak-display').innerText = streak;
+    document.getElementById('streak-display').classList.add('pulse-badge');
+    setTimeout(()=>document.getElementById('streak-display').classList.remove('pulse-badge'), 1200);
+  } else {
+    streak = 0;
+    const box = document.getElementById('streak-box');
+    box.classList.add('hidden');
+    box.classList.remove('flex');
+  }
+}
+
+function addPoints(pts){
+  totalScore += pts;
+  const sd = document.getElementById('score-display');
+  sd.innerText = totalScore;
+  sd.classList.add('scale-125','text-emerald-600');
+  setTimeout(()=>sd.classList.remove('scale-125','text-emerald-600'),300);
+}
+
+function triggerConfetti(){
+  if(typeof confetti==='function') confetti({particleCount:80, spread:70, origin:{y:.6}});
+}
+
+function checkMCAnswer(selectedIdx, btnEl){
+  if(answeredCurrent) return;
+  answeredCurrent = true;
+  const qData = shuffledQuestions[currentQuestionIndex];
+  const chosen = currentShuffleOptions[selectedIdx];
+  const ok = chosen.isCorrect;
+
+  if(ok){
+    playSound('correct');
+    btnEl.className = 'w-full text-left bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-bold p-3.5 rounded-2xl flex items-center space-x-3 text-base shadow-md';
+    addPoints(10);
+    correctCount++;
+    triggerConfetti();
+    handleStreak(true);
+    showCorrectFeedback(qData.explain);
+  } else {
+    playSound('wrong');
+    btnEl.className = 'w-full text-left bg-rose-100 border-2 border-rose-500 text-rose-900 font-bold p-3.5 rounded-2xl flex items-center space-x-3 text-base shadow-md shake';
+    handleStreak(false);
+    showWrongAndReturn();
+  }
+}
+
+function checkPencilAnswer(userChoice){
+  if(answeredCurrent) return;
+  answeredCurrent = true;
+  const qData = shuffledQuestions[currentQuestionIndex];
+  const ok = userChoice === qData.isTrue;
+
+  if(ok){
+    playSound('correct');
+    addPoints(10);
+    correctCount++;
+    triggerConfetti();
+    handleStreak(true);
+    showCorrectFeedback(qData.explain);
+  } else {
+    playSound('wrong');
+    handleStreak(false);
+    showWrongAndReturn();
+  }
+}
+
+function checkFillAnswer(idx, btnEl){
+  if(answeredCurrent) return;
+  answeredCurrent = true;
+  const qData = shuffledQuestions[currentQuestionIndex];
+  const chosen = currentShuffleOptions[idx];
+  const ok = chosen.isCorrect;
+
+  if(ok){
+    playSound('correct');
+    btnEl.className = 'bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-bold p-3 rounded-xl text-base shadow-md';
+    addPoints(10);
+    correctCount++;
+    triggerConfetti();
+    handleStreak(true);
+    showCorrectFeedback(qData.explain);
+  } else {
+    playSound('wrong');
+    btnEl.className = 'bg-rose-100 border-2 border-rose-500 text-rose-900 font-bold p-3 rounded-xl text-base shake';
+    handleStreak(false);
+    showWrongAndReturn();
+  }
+}
+
+/* ==================== SIGUIENTE ==================== */
+function nextQuestion(){
+  playSound('click');
+  if(currentQuestionIndex < shuffledQuestions.length - 1){
+    currentQuestionIndex++;
+    renderQuestion();
+  } else {
+    finishStory();
+  }
+}
+
+function finishStory(){
+  playSound('correct');
+  triggerConfetti();
+  const story = STORIES_DATA[currentStoryIndex];
+  const total = shuffledQuestions.length;
+  const stars = correctCount === total ? 3 : correctCount >= Math.ceil(total*0.6) ? 2 : 1;
+
+  completedStories.add(story.id);
+
+  document.getElementById('stars-earned').innerText = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+  document.getElementById('congrats-correct').innerText = `${correctCount}/${total}`;
+  document.getElementById('congrats-points').innerText = `+${correctCount*10}`;
+
+  let msg = '';
+  if(stars===3) msg = `¡PERFECTO, ${studentName}! Eres un gran lector 🌟`;
+  else if(stars===2) msg = `¡Muy bien, ${studentName}! Sigue practicando 📚`;
+  else msg = `¡Buen intento, ${studentName}! Sigue leyendo 💪`;
+  document.getElementById('congrats-msg').innerText = msg;
+
+  updateCompletedCount();
+  document.getElementById('view-congrats').classList.remove('hidden');
+
+  // ¿Completó todos?
+  if(completedStories.size === STORIES_DATA.length){
+    setTimeout(()=>{
+      document.getElementById('view-congrats').classList.add('hidden');
+      document.getElementById('final-score').innerText = totalScore;
+      document.getElementById('all-done-name').innerText = `¡Felicidades, ${studentName}!`;
+      document.getElementById('view-all-done').classList.remove('hidden');
+      // Confeti especial
+      for(let i=0;i<5;i++){
+        setTimeout(()=>confetti({particleCount:150, spread:120, origin:{y:.5}}), i*300);
+      }
+    }, 2200);
+  }
+}
+
+function nextStoryFromCongrats(){
+  document.getElementById('view-congrats').classList.add('hidden');
+  const nextIdx = currentStoryIndex + 1;
+  if(nextIdx < STORIES_DATA.length){
+    openReading(nextIdx);
+  } else {
+    showStoryList();
+  }
+}
+
+function restartAll(){
+  playSound('click');
+  totalScore = 0;
+  streak = 0;
+  completedStories.clear();
+  document.getElementById('score-display').innerText = '0';
+  document.getElementById('streak-box').classList.add('hidden');
+  updateCompletedCount();
+  document.getElementById('view-all-done').classList.add('hidden');
+  showStoryList();
+}
+</script>
+</body>
+</html>
